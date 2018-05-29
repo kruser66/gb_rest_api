@@ -11,7 +11,9 @@ Python 3.5+
 ### Installing
 '''
 $ virtualenv ~/falconenv
+
 $ source ~/falconenv/bin/activate
+
 $ pip install peewee falcon gunicorn
 '''
 
@@ -20,11 +22,13 @@ $ pip install peewee falcon gunicorn
 ### Linux
 '''
 $ gunicorn app:api -b 127.0.0.1:8000
+
 $ curl http://localhost:8000/v1/users
 '''
 
 ### Windows
 '''
 python run.py
+
 in browser http://127.0.0.1:8000/v1
 '''
