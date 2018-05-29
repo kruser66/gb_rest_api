@@ -3,6 +3,24 @@ from models import *
 from playhouse.shortcuts import model_to_dict
 import json
 
+API_DESC = [
+	{
+		'api_url': '/v1/',
+		'command': 'get',
+		'comments': 'Описание доступных методов'
+	},
+	{
+		'api_url': '/v1/users',
+		'command': 'get',
+		'comments': 'Получить список пользователей'
+	},
+	{
+		'api_url': '/v1/users/{user_id}',
+		'command': 'get',
+		'comments': 'Получить пользователя user_id'
+	},
+]
+
 
 class UserIdResource(object):
 	def on_get(self, req, resp, user_id):
@@ -36,9 +54,10 @@ class KeywordsResource(object):
 		resp.body = json.dumps([model_to_dict(u) for u in keywords], ensure_ascii=False)
 		resp.status = falcon.HTTP_200
 
+
 class Wiki(object):
 	def on_get(self, req, resp):
-		
+		resp.body = json.dumps(API_DESC, ensure_ascii=False)
 
 
 api = falcon.API()
