@@ -14,7 +14,6 @@ class BaseModel(Model):
 
 
 class Users(BaseModel):
-	parentID = IntegerField()
 	idAdmin = IntegerField()
 	login = CharField()
 	email = CharField()

@@ -7,7 +7,7 @@ API_DESC = [
 	{
 		'api_url': '/v1/',
 		'command': 'get',
-		'comments': 'Описание доступных методов'
+		'comments': 'Описание доступных методов (этот документ)'
 	},
 	{
 		'api_url': '/v1/users',
@@ -19,14 +19,30 @@ API_DESC = [
 		'command': 'get',
 		'comments': 'Получить пользователя user_id'
 	},
+	{
+		'api_url': '/v1/persons',
+		'command': 'get',
+		'comments': 'Получить список персон'
+	},
+	{
+		'api_url': '/v1/persons/{persons_id}',
+		'command': 'get',
+		'comments': 'Получить ключевые слова для person_id'
+	},
 ]
+
+json_params = {
+	'ensure_ascii': False,
+	'sort_keys': True,
+	'indent': 4
+}
 
 
 class UserIdResource(object):
 	def on_get(self, req, resp, user_id):
 		try:
-			user = Users.get_or_none(Users.id == user_id)
-			resp.body = json.dumps(model_to_dict(user), ensure_ascii=False)
+			user = Users.get(Users.id == user_id)
+			resp.body = json.dumps(model_to_dict(user), **json_params)
 			resp.status = falcon.HTTP_200
 		except Exception as e:
 			resp.body = json.dumps({'error': str(e)})
@@ -37,27 +53,28 @@ class UserIdResource(object):
 class UserResource:
 	def on_get(self, req, resp):
 		users = Users.select().order_by(Users.id)
-		resp.body = json.dumps([model_to_dict(u) for u in users], ensure_ascii=False)
+		resp.body = json.dumps([model_to_dict(u) for u in users], **json_params)
 		resp.status = falcon.HTTP_200
 
 
 class PersonsResource(object):
 	def on_get(self, req, resp):
 		persons = Persons.select().order_by(Persons.id)
-		resp.body = json.dumps([model_to_dict(u) for u in persons], ensure_ascii=False)
+		resp.body = json.dumps([model_to_dict(u) for u in persons], **json_params)
 		resp.status = falcon.HTTP_200
 
 
 class KeywordsResource(object):
 	def on_get(self, req, resp, person_id):
+		person = Persons.get(Persons.id == person_id)
 		keywords = Keywords.select().where(Keywords.personID == person_id)
-		resp.body = json.dumps([model_to_dict(u) for u in keywords], ensure_ascii=False)
+		resp.body = json.dumps([model_to_dict(u) for u in keywords], **json_params)
 		resp.status = falcon.HTTP_200
 
 
 class Wiki(object):
 	def on_get(self, req, resp):
-		resp.body = json.dumps(API_DESC, ensure_ascii=False)
+		resp.body = json.dumps(API_DESC, **json_params)
 
 
 api = falcon.API()
