@@ -15,14 +15,15 @@ $ source ~/falconenv/bin/activate
 $ pip install peewee falcon gunicorn
 '''
 
-##How to use
+## How to use
+
 ### Linux
 '''
 $ gunicorn app:api -b 127.0.0.1:8000
 $ curl http://localhost:8000/v1/users
 '''
 
-###Windows
+### Windows
 '''
 python run.py
 in browser http://127.0.0.1:8000/v1
