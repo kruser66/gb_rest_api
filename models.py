@@ -37,5 +37,13 @@ class Personspagerank(BaseModel):
 	class Meta:
 		primary_key = False
 
-# if __name__ == '__main__':
-# 	generate_users(10)
+
+class Sites(BaseModel):
+	name = CharField()
+
+
+class Pages(BaseModel):
+	url = CharField()
+	siteId = IntegerField()
+	foundDateTime = DateTimeField()
+	lastScanDate = DateTimeField()

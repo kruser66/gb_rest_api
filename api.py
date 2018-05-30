@@ -29,6 +29,11 @@ API_DESC = [
 		'command': 'get',
 		'comments': 'Получить ключевые слова для person_id'
 	},
+	{
+		'api_url': '/v1/persons/rank',
+		'command': 'get',
+		'comments': 'Получить список персон с их рангами по всем сайтам'
+	},
 ]
 
 json_params = {
