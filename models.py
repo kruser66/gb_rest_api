@@ -21,12 +21,21 @@ class Users(BaseModel):
 
 class Persons(BaseModel):
 	name = CharField()
+	addedBy = IntegerField()
 	
 	
 class Keywords(BaseModel):
 	name = CharField()
 	personID = IntegerField()
 
+
+class Personspagerank(BaseModel):
+	personID = IntegerField()
+	pageID = IntegerField()
+	rank = IntegerField()
+	
+	class Meta:
+		primary_key = False
 
 # if __name__ == '__main__':
 # 	generate_users(10)

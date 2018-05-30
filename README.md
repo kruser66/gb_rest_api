@@ -7,6 +7,7 @@ RESTfull API for education project on Python
 ### Requirements
 
 Python 3.5+
+DB MySQL (local or remote)
 
 ### Installing
 ```

@@ -67,14 +67,23 @@ class PersonsResource(object):
 class KeywordsResource(object):
 	def on_get(self, req, resp, person_id):
 		person = Persons.get(Persons.id == person_id)
+		output = model_to_dict(person)
 		keywords = Keywords.select().where(Keywords.personID == person_id)
-		resp.body = json.dumps([model_to_dict(u) for u in keywords], **json_params)
+		output['keywords'] = [model_to_dict(u) for u in keywords]
+		resp.body = json.dumps(output, **json_params)
 		resp.status = falcon.HTTP_200
 
 
 class Wiki(object):
 	def on_get(self, req, resp):
 		resp.body = json.dumps(API_DESC, **json_params)
+
+
+class Rank(object):
+	def on_get(self, req, resp):
+		ranks = Personspagerank.select().order_by(Personspagerank.personID)
+		resp.body = json.dumps([model_to_dict(u) for u in ranks], **json_params)
+		resp.status = falcon.HTTP_200
 
 
 api = falcon.API()
@@ -84,9 +93,11 @@ users_id = UserIdResource()
 persons = PersonsResource()
 keywords = KeywordsResource()
 wiki = Wiki()
+ranks = Rank()
 
 api.add_route('/v1/', wiki)
 api.add_route('/v1/users', users)
 api.add_route('/v1/users/{user_id}', users_id)
 api.add_route('/v1/persons', persons)
 api.add_route('/v1/persons/{person_id}', keywords)
+api.add_route('/v1/persons/rank', ranks)
