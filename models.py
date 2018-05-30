@@ -19,31 +19,41 @@ class Users(BaseModel):
 	email = CharField()
 
 
-class Persons(BaseModel):
-	name = CharField()
-	addedBy = IntegerField()
-	
-	
-class Keywords(BaseModel):
-	name = CharField()
-	personID = IntegerField()
-
-
-class Personspagerank(BaseModel):
-	personID = IntegerField()
-	pageID = IntegerField()
-	rank = IntegerField()
-	
-	class Meta:
-		primary_key = False
-
-
 class Sites(BaseModel):
 	name = CharField()
 
 
 class Pages(BaseModel):
 	url = CharField()
-	siteId = IntegerField()
-	foundDateTime = DateTimeField()
-	lastScanDate = DateTimeField()
+	siteId = ForeignKeyField(Sites, column_name='siteID', to_field='id')
+	foundDateTime = CharField()
+	lastScanDate = CharField()
+
+
+class Persons(BaseModel):
+	name = CharField()
+	addedBy = IntegerField()
+
+
+class Personspagerank(BaseModel):
+	personID = ForeignKeyField(Persons, column_name='personID', to_field='id')
+	pageID = ForeignKeyField(Pages, column_name='pageID', to_field='id')
+	rank = IntegerField()
+	
+	class Meta:
+		primary_key = False
+
+
+class Keywords(BaseModel):
+	name = CharField()
+	personID = IntegerField()
+
+
+
+
+	
+	
+
+
+
+
