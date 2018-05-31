@@ -2,6 +2,7 @@ import falcon
 from models import *
 from playhouse.shortcuts import model_to_dict
 import json
+from datetime import datetime, timedelta
 
 API_DESC = [
 	{
@@ -48,6 +49,16 @@ API_DESC = [
 		'api_url': '/v1/sites/{site_id}',
 		'command': 'get',
 		'comments': 'Получить сайт по site_id'
+	},
+	{
+		'api_url': '/v1/persons/rank/date?_from=YYYYMMDDDHHMMSS&_till=YYYYMMDDDHHMMSS',
+		'command': 'get',
+		'comments': 'Получить список персон с их рангами по всем сайтам за период _from _till'
+	},
+	{
+		'api_url': '/v1/persons/rank/{person_id}/date?_from=YYYYMMDDDHHMMSS&_till=YYYYMMDDDHHMMSS',
+		'command': 'get',
+		'comments': 'Получить ранг {person_id} по всем сайтам за период _from _till'
 	},
 ]
 
@@ -137,6 +148,38 @@ class SiteIdResource(object):
 			return resp
 
 
+class RankDateResource(object):
+	def on_get(self, req, resp):
+		if req.params:
+			date_from = datetime.strptime(req.params['_from'], '%Y%m%d').date()
+			date_till = datetime.strptime(req.params['_till'], '%Y%m%d').date()+timedelta(days=1)
+			ranks = Personspagerank.select().join(Pages).where(
+				Pages.lastScanDate.between(date_from, date_till))
+			resp.body = json.dumps([model_to_dict(u) for u in ranks], **json_params)
+			resp.status = falcon.HTTP_200
+		else:
+			output = [{'error': 'Недостаточно параметров'}, API_DESC[9]]
+			resp.body = json.dumps(output, **json_params)
+			resp.status = falcon.HTTP_500
+			return resp
+
+
+class RankDateIdResource(object):
+	def on_get(self, req, resp, person_id):
+		if req.params:
+			date_from = datetime.strptime(req.params['_from'], '%Y%m%d').date()
+			date_till = datetime.strptime(req.params['_till'], '%Y%m%d').date()+timedelta(days=1)
+			ranks = Personspagerank.select().where(Personspagerank.personID == person_id)\
+				.join(Pages).where(Pages.lastScanDate.between(date_from, date_till))
+			resp.body = json.dumps([model_to_dict(u) for u in ranks], **json_params)
+			resp.status = falcon.HTTP_200
+		else:
+			output = [{'error': 'Недостаточно параметров'}, API_DESC[10]]
+			resp.body = json.dumps(output, **json_params)
+			resp.status = falcon.HTTP_500
+			return resp
+
+
 api = falcon.API()
 
 api.add_route('/v1/', Wiki())
@@ -148,3 +191,5 @@ api.add_route('/v1/persons', PersonsResource())
 api.add_route('/v1/persons/{person_id}', KeywordsResource())
 api.add_route('/v1/persons/rank', RankResource())
 api.add_route('/v1/persons/rank/{person_id}', RankIdResource())
+api.add_route('/v1/persons/rank/date', RankDateResource())
+api.add_route('/v1/persons/rank/{person_id}/date', RankDateIdResource())
