@@ -84,10 +84,31 @@ class Wiki(object):
 		resp.body = json.dumps(API_DESC, **json_params)
 
 
-class Rank(object):
+class RankResource(object):
 	def on_get(self, req, resp):
 		ranks = Personspagerank.select().order_by(Personspagerank.personID)
 		resp.body = json.dumps([model_to_dict(u) for u in ranks], **json_params)
+		resp.status = falcon.HTTP_200
+
+
+class RankIdResource(object):
+	def on_get(self, req, resp, person_id):
+		ranks = Personspagerank.select().where(Personspagerank.personID == person_id)
+		resp.body = json.dumps([model_to_dict(u) for u in ranks], **json_params)
+		resp.status = falcon.HTTP_200
+
+
+class SiteResource(object):
+	def on_get(self, req, resp):
+		sites = Sites.select().order_by(Sites.id)
+		resp.body = json.dumps([model_to_dict(u) for u in sites], **json_params)
+		resp.status = falcon.HTTP_200
+
+
+class SiteIdResource(object):
+	def on_get(self, req, resp, site_id):
+		sites = Sites.select().where(Sites.id == site_id)
+		resp.body = json.dumps([model_to_dict(u) for u in sites], **json_params)
 		resp.status = falcon.HTTP_200
 
 
@@ -98,11 +119,17 @@ users_id = UserIdResource()
 persons = PersonsResource()
 keywords = KeywordsResource()
 wiki = Wiki()
-ranks = Rank()
+rank = RankResource()
+rank_id = RankIdResource()
+sites = SiteResource()
+sites_id = SiteIdResource()
 
 api.add_route('/v1/', wiki)
 api.add_route('/v1/users', users)
 api.add_route('/v1/users/{user_id}', users_id)
+api.add_route('/v1/sites', sites)
+api.add_route('/v1/sites/{site_id}', sites_id)
 api.add_route('/v1/persons', persons)
 api.add_route('/v1/persons/{person_id}', keywords)
-api.add_route('/v1/persons/rank', ranks)
+api.add_route('/v1/persons/rank', rank)
+api.add_route('/v1/persons/rank/{person_id}', rank_id)

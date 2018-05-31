@@ -21,6 +21,8 @@ class Users(BaseModel):
 
 class Sites(BaseModel):
 	name = CharField()
+	addedBy = IntegerField()
+	siteDescription = CharField()
 
 
 class Pages(BaseModel):
