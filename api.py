@@ -34,6 +34,21 @@ API_DESC = [
 		'command': 'get',
 		'comments': 'Получить список персон с их рангами по всем сайтам'
 	},
+	{
+		'api_url': '/v1/persons/rank/{person_id}',
+		'command': 'get',
+		'comments': 'Получить список рангов по всем сайтам для person_id'
+	},
+	{
+		'api_url': '/v1/sites',
+		'command': 'get',
+		'comments': 'Получить список сайтов'
+	},
+	{
+		'api_url': '/v1/sites/{site_id}',
+		'command': 'get',
+		'comments': 'Получить сайт по site_id'
+	},
 ]
 
 json_params = {
@@ -50,7 +65,7 @@ class UserIdResource(object):
 			resp.body = json.dumps(model_to_dict(user), **json_params)
 			resp.status = falcon.HTTP_200
 		except Exception as e:
-			resp.body = json.dumps({'error': str(e)})
+			resp.body = json.dumps({'error': 'Неверный номер id'}, **json_params)
 			resp.status = falcon.HTTP_500
 			return resp
 
@@ -71,12 +86,17 @@ class PersonsResource(object):
 
 class KeywordsResource(object):
 	def on_get(self, req, resp, person_id):
-		person = Persons.get(Persons.id == person_id)
-		output = model_to_dict(person)
-		keywords = Keywords.select().where(Keywords.personID == person_id)
-		output['keywords'] = [model_to_dict(u) for u in keywords]
-		resp.body = json.dumps(output, **json_params)
-		resp.status = falcon.HTTP_200
+		try:
+			person = Persons.get(Persons.id == person_id)
+			output = model_to_dict(person)
+			keywords = Keywords.select().where(Keywords.personID == person_id)
+			output['keywords'] = [model_to_dict(u) for u in keywords]
+			resp.body = json.dumps(output, **json_params)
+			resp.status = falcon.HTTP_200
+		except Exception as e:
+			resp.body = json.dumps({'error': 'Неверный номер id'}, **json_params)
+			resp.status = falcon.HTTP_500
+			return resp
 
 
 class Wiki(object):
@@ -107,29 +127,24 @@ class SiteResource(object):
 
 class SiteIdResource(object):
 	def on_get(self, req, resp, site_id):
-		sites = Sites.select().where(Sites.id == site_id)
-		resp.body = json.dumps([model_to_dict(u) for u in sites], **json_params)
-		resp.status = falcon.HTTP_200
+		try:
+			sites = Sites.select().where(Sites.id == site_id)
+			resp.body = json.dumps([model_to_dict(u) for u in sites], **json_params)
+			resp.status = falcon.HTTP_200
+		except Exception as e:
+			resp.body = json.dumps({'error': 'Неверный номер id'}, **json_params)
+			resp.status = falcon.HTTP_500
+			return resp
 
 
 api = falcon.API()
 
-users = UserResource()
-users_id = UserIdResource()
-persons = PersonsResource()
-keywords = KeywordsResource()
-wiki = Wiki()
-rank = RankResource()
-rank_id = RankIdResource()
-sites = SiteResource()
-sites_id = SiteIdResource()
-
-api.add_route('/v1/', wiki)
-api.add_route('/v1/users', users)
-api.add_route('/v1/users/{user_id}', users_id)
-api.add_route('/v1/sites', sites)
-api.add_route('/v1/sites/{site_id}', sites_id)
-api.add_route('/v1/persons', persons)
-api.add_route('/v1/persons/{person_id}', keywords)
-api.add_route('/v1/persons/rank', rank)
-api.add_route('/v1/persons/rank/{person_id}', rank_id)
+api.add_route('/v1/', Wiki())
+api.add_route('/v1/users', UserResource())
+api.add_route('/v1/users/{user_id}', UserIdResource())
+api.add_route('/v1/sites', SiteResource())
+api.add_route('/v1/sites/{site_id}', SiteIdResource())
+api.add_route('/v1/persons', PersonsResource())
+api.add_route('/v1/persons/{person_id}', KeywordsResource())
+api.add_route('/v1/persons/rank', RankResource())
+api.add_route('/v1/persons/rank/{person_id}', RankIdResource())
