@@ -151,8 +151,8 @@ class SiteIdResource(object):
 class RankDateResource(object):
 	def on_get(self, req, resp):
 		if req.params:
-			date_from = datetime.strptime(req.params['_from'], '%Y%m%d').date()
-			date_till = datetime.strptime(req.params['_till'], '%Y%m%d').date()+timedelta(days=1)
+			date_from = datetime.strptime(req.params['_from'], '%Y%m%d%H%M%S')  # .date()
+			date_till = datetime.strptime(req.params['_till'], '%Y%m%d%H%M%S')  # .date()+timedelta(days=1)
 			ranks = Personspagerank.select().join(Pages).where(
 				Pages.lastScanDate.between(date_from, date_till))
 			resp.body = json.dumps([model_to_dict(u) for u in ranks], **json_params)
@@ -167,8 +167,8 @@ class RankDateResource(object):
 class RankDateIdResource(object):
 	def on_get(self, req, resp, person_id):
 		if req.params:
-			date_from = datetime.strptime(req.params['_from'], '%Y%m%d').date()
-			date_till = datetime.strptime(req.params['_till'], '%Y%m%d').date()+timedelta(days=1)
+			date_from = datetime.strptime(req.params['_from'], '%Y%m%d%H%M%S')  # .date()
+			date_till = datetime.strptime(req.params['_till'], '%Y%m%d%H%M%S')  # .date()+timedelta(days=1)
 			ranks = Personspagerank.select().where(Personspagerank.personID == person_id)\
 				.join(Pages).where(Pages.lastScanDate.between(date_from, date_till))
 			resp.body = json.dumps([model_to_dict(u) for u in ranks], **json_params)

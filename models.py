@@ -14,7 +14,7 @@ class BaseModel(Model):
 
 
 class Users(BaseModel):
-	idAdmin = IntegerField()
+	isAdmin = IntegerField()
 	login = CharField()
 	email = CharField()
 
