@@ -180,7 +180,18 @@ class RankDateIdResource(object):
 			return resp
 
 
-api = falcon.API()
+class PeeweeConnectionMiddleware(object):
+	def process_request(self, req, resp):
+		db.connect()
+
+	def process_response(self, req, resp, resource):
+		if not db.is_closed():
+			db.close()
+
+
+api = falcon.API(middleware=[
+	PeeweeConnectionMiddleware(),
+])
 
 api.add_route('/v1/', Wiki())
 api.add_route('/v1/users', UserResource())
