@@ -11,9 +11,7 @@ DB MySQL (local or remote)
 
 ### Installing
 ```
-$ virtualenv ~/falconenv
-$ source ~/falconenv/bin/activate
-$ pip install peewee falcon gunicorn
+pip install -r requirements.txt
 ```
 
 ## How to use
