@@ -83,7 +83,7 @@ class UserIdResource(object):
 
 class UserResource:
 	def on_get(self, req, resp):
-		users = Users.select().order_by(Users.id)
+		users = Users.select(Users.id, Users.login, Users.email).order_by(Users.id)
 		resp.body = json.dumps([model_to_dict(u) for u in users], **json_params)
 		resp.status = falcon.HTTP_200
 
