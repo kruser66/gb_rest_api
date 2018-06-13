@@ -16,6 +16,9 @@ pip install -r requirements.txt
 
 ## How to use
 
+### Config
+Change config.py for setting up connect parameters to database
+
 ### Linux
 ```
 $ gunicorn app:api -b 127.0.0.1:8000

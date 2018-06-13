@@ -4,6 +4,7 @@ from playhouse.shortcuts import model_to_dict
 import json
 from datetime import datetime
 from config import database
+import uuid
 
 API_DESC = [
 	{
@@ -76,12 +77,14 @@ json_params = {
 	'default': datetime_handler
 }
 
+exclude = [Users.password, Users.token, Users.tokencreateddate, Users.tokenlastaccess]
+
 
 class UserIdResource(object):
 	def on_get(self, req, resp, user_id):
 		try:
 			user = Users.get(Users.id == user_id)
-			resp.body = json.dumps(model_to_dict(user, exclude=[Users.password, Users.token, Users.tokencreateddate, Users.tokenlastaccess]), **json_params)
+			resp.body = json.dumps(model_to_dict(user, exclude=exclude), **json_params)
 			resp.status = falcon.HTTP_200
 		except Exception as e:
 			resp.body = json.dumps({'error': 'Неверный номер id'}, **json_params)
@@ -92,14 +95,14 @@ class UserIdResource(object):
 class UserResource:
 	def on_get(self, req, resp):
 		users = Users.select().order_by(Users.id)
-		resp.body = json.dumps([model_to_dict(u, only=[Users.id, Users.login, Users.email]) for u in users], **json_params)
+		resp.body = json.dumps([model_to_dict(u, exclude=exclude) for u in users], **json_params)
 		resp.status = falcon.HTTP_200
 
 
 class PersonsResource(object):
 	def on_get(self, req, resp):
 		persons = Persons.select().order_by(Persons.id)
-		resp.body = json.dumps([model_to_dict(u) for u in persons], **json_params)
+		resp.body = json.dumps([model_to_dict(u, exclude=exclude) for u in persons], **json_params)
 		resp.status = falcon.HTTP_200
 
 
@@ -107,9 +110,9 @@ class KeywordsResource(object):
 	def on_get(self, req, resp, person_id):
 		try:
 			person = Persons.get(Persons.id == person_id)
-			output = model_to_dict(person)
+			output = model_to_dict(person, exclude=exclude)
 			keywords = Keywords.select().where(Keywords.personid == person_id)
-			output['keywords'] = [model_to_dict(u) for u in keywords]
+			output['keywords'] = [model_to_dict(u, exclude=exclude) for u in keywords]
 			resp.body = json.dumps(output, **json_params)
 			resp.status = falcon.HTTP_200
 		except Exception as e:
@@ -126,21 +129,21 @@ class Wiki(object):
 class RankResource(object):
 	def on_get(self, req, resp):
 		ranks = Personspagerank.select().order_by(Personspagerank.personid)
-		resp.body = json.dumps([model_to_dict(u) for u in ranks], **json_params)
+		resp.body = json.dumps([model_to_dict(u, exclude=exclude, recurse=False) for u in ranks], **json_params)
 		resp.status = falcon.HTTP_200
 
 
 class RankIdResource(object):
 	def on_get(self, req, resp, person_id):
 		ranks = Personspagerank.select().where(Personspagerank.personid == person_id)
-		resp.body = json.dumps([model_to_dict(u) for u in ranks], **json_params)
+		resp.body = json.dumps([model_to_dict(u, exclude=exclude) for u in ranks], **json_params)
 		resp.status = falcon.HTTP_200
 
 
 class SiteResource(object):
 	def on_get(self, req, resp):
 		sites = Sites.select().order_by(Sites.id)
-		resp.body = json.dumps([model_to_dict(u) for u in sites], **json_params)
+		resp.body = json.dumps([model_to_dict(u, exclude=exclude) for u in sites], **json_params)
 		resp.status = falcon.HTTP_200
 
 
@@ -148,7 +151,7 @@ class SiteIdResource(object):
 	def on_get(self, req, resp, site_id):
 		try:
 			sites = Sites.select().where(Sites.id == site_id)
-			resp.body = json.dumps([model_to_dict(u) for u in sites], **json_params)
+			resp.body = json.dumps([model_to_dict(u, exclude=exclude) for u in sites], **json_params)
 			resp.status = falcon.HTTP_200
 		except Exception as e:
 			resp.body = json.dumps({'error': 'Неверный номер id'}, **json_params)
@@ -163,7 +166,7 @@ class RankDateResource(object):
 			date_till = datetime.strptime(req.params['_till'], '%Y%m%d%H%M%S')  # .date()+timedelta(days=1)
 			ranks = Personspagerank.select().join(Pages).where(
 				Pages.lastScanDate.between(date_from, date_till))
-			resp.body = json.dumps([model_to_dict(u) for u in ranks], **json_params)
+			resp.body = json.dumps([model_to_dict(u, exclude=exclude) for u in ranks], **json_params)
 			resp.status = falcon.HTTP_200
 		else:
 			output = [{'error': 'Недостаточно параметров'}, API_DESC[9]]
@@ -179,7 +182,7 @@ class RankDateIdResource(object):
 			date_till = datetime.strptime(req.params['_till'], '%Y%m%d%H%M%S')  # .date()+timedelta(days=1)
 			ranks = Personspagerank.select().where(Personspagerank.personid == person_id) \
 				.join(Pages).where(Pages.lastScanDate.between(date_from, date_till))
-			resp.body = json.dumps([model_to_dict(u) for u in ranks], **json_params)
+			resp.body = json.dumps([model_to_dict(u, exclude=exclude) for u in ranks], **json_params)
 			resp.status = falcon.HTTP_200
 		else:
 			output = [{'error': 'Недостаточно параметров'}, API_DESC[10]]
