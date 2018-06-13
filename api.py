@@ -2,7 +2,8 @@ import falcon
 from models import *
 from playhouse.shortcuts import model_to_dict
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
+from config import database
 
 API_DESC = [
 	{
@@ -62,10 +63,17 @@ API_DESC = [
 	},
 ]
 
+
+def datetime_handler(x):
+	if isinstance(x, datetime):
+		return x.strftime('%Y-%m-%d %H:%M:%S')
+
+
 json_params = {
 	'ensure_ascii': False,
 	'sort_keys': True,
-	'indent': 4
+	'indent': 4,
+	'default': datetime_handler
 }
 
 
@@ -73,7 +81,7 @@ class UserIdResource(object):
 	def on_get(self, req, resp, user_id):
 		try:
 			user = Users.get(Users.id == user_id)
-			resp.body = json.dumps(model_to_dict(user), **json_params)
+			resp.body = json.dumps(model_to_dict(user, exclude=[Users.password, Users.token, Users.tokencreateddate, Users.tokenlastaccess]), **json_params)
 			resp.status = falcon.HTTP_200
 		except Exception as e:
 			resp.body = json.dumps({'error': 'Неверный номер id'}, **json_params)
@@ -83,8 +91,8 @@ class UserIdResource(object):
 
 class UserResource:
 	def on_get(self, req, resp):
-		users = Users.select(Users.id, Users.login, Users.email).order_by(Users.id)
-		resp.body = json.dumps([model_to_dict(u) for u in users], **json_params)
+		users = Users.select().order_by(Users.id)
+		resp.body = json.dumps([model_to_dict(u, only=[Users.id, Users.login, Users.email]) for u in users], **json_params)
 		resp.status = falcon.HTTP_200
 
 
@@ -100,7 +108,7 @@ class KeywordsResource(object):
 		try:
 			person = Persons.get(Persons.id == person_id)
 			output = model_to_dict(person)
-			keywords = Keywords.select().where(Keywords.personID == person_id)
+			keywords = Keywords.select().where(Keywords.personid == person_id)
 			output['keywords'] = [model_to_dict(u) for u in keywords]
 			resp.body = json.dumps(output, **json_params)
 			resp.status = falcon.HTTP_200
@@ -117,14 +125,14 @@ class Wiki(object):
 
 class RankResource(object):
 	def on_get(self, req, resp):
-		ranks = Personspagerank.select().order_by(Personspagerank.personID)
+		ranks = Personspagerank.select().order_by(Personspagerank.personid)
 		resp.body = json.dumps([model_to_dict(u) for u in ranks], **json_params)
 		resp.status = falcon.HTTP_200
 
 
 class RankIdResource(object):
 	def on_get(self, req, resp, person_id):
-		ranks = Personspagerank.select().where(Personspagerank.personID == person_id)
+		ranks = Personspagerank.select().where(Personspagerank.personid == person_id)
 		resp.body = json.dumps([model_to_dict(u) for u in ranks], **json_params)
 		resp.status = falcon.HTTP_200
 
@@ -169,7 +177,7 @@ class RankDateIdResource(object):
 		if req.params:
 			date_from = datetime.strptime(req.params['_from'], '%Y%m%d%H%M%S')  # .date()
 			date_till = datetime.strptime(req.params['_till'], '%Y%m%d%H%M%S')  # .date()+timedelta(days=1)
-			ranks = Personspagerank.select().where(Personspagerank.personID == person_id)\
+			ranks = Personspagerank.select().where(Personspagerank.personid == person_id) \
 				.join(Pages).where(Pages.lastScanDate.between(date_from, date_till))
 			resp.body = json.dumps([model_to_dict(u) for u in ranks], **json_params)
 			resp.status = falcon.HTTP_200
@@ -182,11 +190,11 @@ class RankDateIdResource(object):
 
 class PeeweeConnectionMiddleware(object):
 	def process_request(self, req, resp):
-		db.connect()
-
+		database.connect()
+	
 	def process_response(self, req, resp, resource):
-		if not db.is_closed():
-			db.close()
+		if not database.is_closed():
+			database.close()
 
 
 api = falcon.API(middleware=[

@@ -1,16 +1,10 @@
 from peewee import *
-
-db = MySQLDatabase(
-	database='searchandratewords',
-	user='root',
-	password='1234',
-	host='127.0.0.1',
-	port=3306)
+from config import database
 
 
 class BaseModel(Model):
 	class Meta:
-		database = db
+		database = database
 
 
 class Users(BaseModel):
@@ -21,8 +15,8 @@ class Users(BaseModel):
 	parentid = ForeignKeyField(column_name='parentID', field='id', model='self', null=True)
 	password = CharField()
 	token = CharField(null=True, unique=True)
-	tokencreateddate = IntegerField(column_name='tokenCreatedDate', null=True)
-	tokenlastaccess = IntegerField(column_name='tokenLastAccess', null=True)
+	tokencreateddate = DateTimeField(column_name='tokenCreatedDate', null=True)
+	tokenlastaccess = DateTimeField(column_name='tokenLastAccess', formats=['%Y-%m-%d %H:%M:%S'], null=True)
 	
 	class Meta:
 		table_name = 'users'
@@ -68,8 +62,8 @@ class Sites(BaseModel):
 
 class Pages(BaseModel):
 	id = AutoField(column_name='ID')
-	url = CharField(column_name='URL', unique=True)
-	founddatetime = DateTimeField(column_name='foundDateTime', constraints=[SQL("DEFAULT current_timestamp()")])
+	url = CharField(column_name='URL')
+	founddatetime = DateTimeField(column_name='foundDateTime')
 	lastscandate = DateTimeField(column_name='lastScanDate', null=True)
 	siteid = ForeignKeyField(column_name='siteID', field='id', model=Sites)
 	
@@ -78,13 +72,12 @@ class Pages(BaseModel):
 
 
 class Personspagerank(BaseModel):
+	id = AutoField(column_name='ID')
 	pageid = ForeignKeyField(column_name='PageID', field='id', model=Pages)
 	personid = ForeignKeyField(column_name='PersonID', field='id', model=Persons)
 	rank = IntegerField(column_name='Rank', null=True)
 	
 	class Meta:
 		table_name = 'personspagerank'
-		indexes = (
-			(('personid', 'pageid'), True),
-		)
-		primary_key = CompositeKey('pageid', 'personid')
+
+
