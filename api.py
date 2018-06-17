@@ -2,15 +2,24 @@ import falcon
 from models import *
 from playhouse.shortcuts import model_to_dict
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from config import database
 import uuid
 
+
+EXPIRED_TIME = 3
 API_DESC = [
 	{
 		'api_url': '/v1/',
 		'command': 'get',
 		'comments': 'Описание доступных методов (этот документ)'
+	},
+	{
+		'api_url': '/v1/auth',
+		'command': 'post',
+		'comments': 'Получить токен для пользователя',
+		'content': "Content-Type: application/json",
+		'data': {"user": "some_user", "password": "correct_pass"}
 	},
 	{
 		'api_url': '/v1/users',
@@ -97,6 +106,34 @@ class UserResource:
 		users = Users.select().order_by(Users.id)
 		resp.body = json.dumps([model_to_dict(u, exclude=exclude) for u in users], **json_params)
 		resp.status = falcon.HTTP_200
+
+
+class AuthResource(object):
+	def on_post(self, req, resp):
+		body = json.loads(req.stream.read().decode('utf-8'))
+		print(body)
+		print(body['user'])
+		try:
+			user = Users.get_or_none(Users.login == body['user'])
+			if user and user.password == body['password']:
+				# print(user.tokencreateddate + timedelta(minutes=EXPIRED_TIME))
+				# print('Success', user.login, user.token, type(user.tokenlastaccess), user.tokencreateddate + timedelta(minutes=EXPIRED_TIME))
+				if (user.token is None) or ((user.tokencreateddate + timedelta(minutes=EXPIRED_TIME)) < datetime.now()):
+					new_token = uuid.uuid4()
+					user.token = new_token
+					user.tokencreateddate = datetime.now()
+					user.tokenlastaccess = datetime.now()
+					user.save()
+					user = Users.get(Users.login == body['user'])
+				output = {'success': '1', 'token': user.token, 'user_id': user.id}
+			else:
+				print('Fail')
+				output = {'success': '0'}
+			resp.body = json.dumps(output, **json_params)
+			resp.status = falcon.HTTP_200
+		except:
+			resp.body = json.dumps({'success': '0'}, **json_params)
+			resp.body = falcon.HTTP_500
 
 
 class PersonsResource(object):
@@ -205,6 +242,7 @@ api = falcon.API(middleware=[
 ])
 
 api.add_route('/v1/', Wiki())
+api.add_route('/v1/auth', AuthResource())
 api.add_route('/v1/users', UserResource())
 api.add_route('/v1/users/{user_id}', UserIdResource())
 api.add_route('/v1/sites', SiteResource())
