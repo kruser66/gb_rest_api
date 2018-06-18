@@ -1,5 +1,11 @@
 from peewee import *
-from config import database
+
+database = MySQLDatabase(
+	database='searchandratewords',
+	user='apiuser',
+	password='PassToUserApi',
+	host='gbdb',
+	port=3306)
 
 
 class BaseModel(Model):

@@ -3,7 +3,6 @@ from models import *
 from playhouse.shortcuts import model_to_dict
 import json
 from datetime import datetime, timedelta
-from config import database
 import uuid
 
 
@@ -81,12 +80,15 @@ def datetime_handler(x):
 
 json_params = {
 	'ensure_ascii': False,
-	'sort_keys': True,
 	'indent': 4,
 	'default': datetime_handler
 }
 
 exclude = [Users.password, Users.token, Users.tokencreateddate, Users.tokenlastaccess]
+
+
+def check_auth_token():
+	pass
 
 
 class UserIdResource(object):
@@ -104,20 +106,19 @@ class UserIdResource(object):
 class UserResource:
 	def on_get(self, req, resp):
 		users = Users.select().order_by(Users.id)
-		resp.body = json.dumps([model_to_dict(u, exclude=exclude) for u in users], **json_params)
+		resp.body = json.dumps([model_to_dict(u, exclude=exclude, recurse=False) for u in users], **json_params)
 		resp.status = falcon.HTTP_200
 
 
 class AuthResource(object):
+	def on_get(self, req, resp):
+		resp.status = falcon.HTTP_404
+	
 	def on_post(self, req, resp):
 		body = json.loads(req.stream.read().decode('utf-8'))
-		print(body)
-		print(body['user'])
 		try:
 			user = Users.get_or_none(Users.login == body['user'])
 			if user and user.password == body['password']:
-				# print(user.tokencreateddate + timedelta(minutes=EXPIRED_TIME))
-				# print('Success', user.login, user.token, type(user.tokenlastaccess), user.tokencreateddate + timedelta(minutes=EXPIRED_TIME))
 				if (user.token is None) or ((user.tokencreateddate + timedelta(minutes=EXPIRED_TIME)) < datetime.now()):
 					new_token = uuid.uuid4()
 					user.token = new_token
@@ -127,7 +128,6 @@ class AuthResource(object):
 					user = Users.get(Users.login == body['user'])
 				output = {'success': '1', 'token': user.token, 'user_id': user.id}
 			else:
-				print('Fail')
 				output = {'success': '0'}
 			resp.body = json.dumps(output, **json_params)
 			resp.status = falcon.HTTP_200
@@ -139,7 +139,7 @@ class AuthResource(object):
 class PersonsResource(object):
 	def on_get(self, req, resp):
 		persons = Persons.select().order_by(Persons.id)
-		resp.body = json.dumps([model_to_dict(u, exclude=exclude) for u in persons], **json_params)
+		resp.body = json.dumps([model_to_dict(u, exclude=exclude, recurse=False) for u in persons], **json_params)
 		resp.status = falcon.HTTP_200
 
 
@@ -147,9 +147,9 @@ class KeywordsResource(object):
 	def on_get(self, req, resp, person_id):
 		try:
 			person = Persons.get(Persons.id == person_id)
-			output = model_to_dict(person, exclude=exclude)
+			output = model_to_dict(person, exclude=exclude, recurse=False)
 			keywords = Keywords.select().where(Keywords.personid == person_id)
-			output['keywords'] = [model_to_dict(u, exclude=exclude) for u in keywords]
+			output['keywords'] = [model_to_dict(u, exclude=exclude, recurse=False) for u in keywords]
 			resp.body = json.dumps(output, **json_params)
 			resp.status = falcon.HTTP_200
 		except Exception as e:
@@ -173,7 +173,7 @@ class RankResource(object):
 class RankIdResource(object):
 	def on_get(self, req, resp, person_id):
 		ranks = Personspagerank.select().where(Personspagerank.personid == person_id)
-		resp.body = json.dumps([model_to_dict(u, exclude=exclude) for u in ranks], **json_params)
+		resp.body = json.dumps([model_to_dict(u, exclude=exclude, recurse=False) for u in ranks], **json_params)
 		resp.status = falcon.HTTP_200
 
 
@@ -199,14 +199,14 @@ class SiteIdResource(object):
 class RankDateResource(object):
 	def on_get(self, req, resp):
 		if req.params:
-			date_from = datetime.strptime(req.params['_from'], '%Y%m%d%H%M%S')  # .date()
-			date_till = datetime.strptime(req.params['_till'], '%Y%m%d%H%M%S')  # .date()+timedelta(days=1)
+			date_from = datetime.strptime(req.params['_from'], '%Y%m%d%H%M%S')
+			date_till = datetime.strptime(req.params['_till'], '%Y%m%d%H%M%S')
 			ranks = Personspagerank.select().join(Pages).where(
-				Pages.lastScanDate.between(date_from, date_till))
-			resp.body = json.dumps([model_to_dict(u, exclude=exclude) for u in ranks], **json_params)
+				Pages.lastscandate.between(date_from, date_till))
+			resp.body = json.dumps([model_to_dict(u, exclude=exclude, recurse=False) for u in ranks], **json_params)
 			resp.status = falcon.HTTP_200
 		else:
-			output = [{'error': 'Недостаточно параметров'}, API_DESC[9]]
+			output = [{'error': 'Недостаточно параметров'}, API_DESC[10]]
 			resp.body = json.dumps(output, **json_params)
 			resp.status = falcon.HTTP_500
 			return resp
@@ -215,16 +215,17 @@ class RankDateResource(object):
 class RankDateIdResource(object):
 	def on_get(self, req, resp, person_id):
 		if req.params:
-			date_from = datetime.strptime(req.params['_from'], '%Y%m%d%H%M%S')  # .date()
-			date_till = datetime.strptime(req.params['_till'], '%Y%m%d%H%M%S')  # .date()+timedelta(days=1)
-			ranks = Personspagerank.select().where(Personspagerank.personid == person_id) \
-				.join(Pages).where(Pages.lastScanDate.between(date_from, date_till))
-			resp.body = json.dumps([model_to_dict(u, exclude=exclude) for u in ranks], **json_params)
-			resp.status = falcon.HTTP_200
-		else:
-			output = [{'error': 'Недостаточно параметров'}, API_DESC[10]]
-			resp.body = json.dumps(output, **json_params)
-			resp.status = falcon.HTTP_500
+			try:
+				date_from = datetime.strptime(req.params['_from'], '%Y%m%d%H%M%S')  # .date()
+				date_till = datetime.strptime(req.params['_till'], '%Y%m%d%H%M%S')  # .date()+timedelta(days=1)
+				ranks = Personspagerank.select().where(Personspagerank.personid == person_id) \
+					.join(Pages).where(Pages.lastscandate.between(date_from, date_till))
+				resp.body = json.dumps([model_to_dict(u, exclude=exclude, recurse=False) for u in ranks], **json_params)
+				resp.status = falcon.HTTP_200
+			except:
+				output = [{'error': 'Недостаточно параметров'}, API_DESC[11]]
+				resp.body = json.dumps(output, **json_params)
+				resp.status = falcon.HTTP_500
 			return resp
 
 
